@@ -2,9 +2,10 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-
-import org.json.JSONArray;
-import org.json.JSONObject;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 public class CricketMatchesAssignment {
     public static void main(String[] args) {
@@ -27,42 +28,45 @@ public class CricketMatchesAssignment {
                 reader.close();
 
                 // Parse the JSON response
-                JSONArray matchesArray = new JSONArray(response.toString());
+                JsonObject jsonResponse = JsonParser.parseString(response.toString()).getAsJsonObject();
+                JsonArray matchesArray = jsonResponse.getAsJsonArray("data");
 
                 // Initialize variables for computations
                 int highestScore = 0;
                 String teamWithHighestScore = "";
                 int matchesWith300PlusScore = 0;
 
-                for (int i = 0; i < matchesArray.length(); i++) {
-                    JSONObject matchObject = matchesArray.getJSONObject(i);
+                for (JsonElement matchElement : matchesArray) {
+                    JsonObject matchObject = matchElement.getAsJsonObject();
 
-                    // Check if the required fields exist
-                    if (matchObject.has("t1s") && matchObject.has("t2s") && matchObject.has("t1") && matchObject.has("t2")) {
-                        int team1Score = matchObject.getInt("t1s");
-                        int team2Score = matchObject.getInt("t2s");
+                    // Retrieve scores and team names
+                    String team1ScoreStr = matchObject.get("t1s").getAsString().split("/")[0];
+                    String team2ScoreStr = matchObject.get("t2s").getAsString().split("/")[0];
+                    int team1Score = Integer.parseInt(team1ScoreStr);
+                    int team2Score = Integer.parseInt(team2ScoreStr);
+                    String team1Name = matchObject.get("t1").getAsString();
+                    String team2Name = matchObject.get("t2").getAsString();
 
-                        // Update highest score and team
-                        if (team1Score > highestScore) {
-                            highestScore = team1Score;
-                            teamWithHighestScore = matchObject.getString("t1");
-                        }
+                    // Update highest score and team
+                    if (team1Score > highestScore) {
+                        highestScore = team1Score;
+                        teamWithHighestScore = team1Name;
+                    }
 
-                        if (team2Score > highestScore) {
-                            highestScore = team2Score;
-                            teamWithHighestScore = matchObject.getString("t2");
-                        }
+                    if (team2Score > highestScore) {
+                        highestScore = team2Score;
+                        teamWithHighestScore = team2Name;
+                    }
 
-                        // Count matches with a total score of 300 or more
-                        if (team1Score + team2Score >= 300) {
-                            matchesWith300PlusScore++;
-                        }
-                    } else {
-                        System.out.println("Warning: Missing fields in match data.");
+                    // Count matches with a total score of 300 or more
+                    if (team1Score + team2Score >= 300) {
+                        matchesWith300PlusScore++;
                     }
                 }
 
                 // Print the results
+                System.out.println("API Response: " + response.toString());
+
                 System.out.println("Highest Score: " + highestScore + " by " + teamWithHighestScore);
                 System.out.println("Number of Matches with total 300 Plus Score: " + matchesWith300PlusScore);
 
